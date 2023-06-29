@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace Adventure
 {
@@ -8,7 +9,7 @@ namespace Adventure
         private const int _screen_height = 40;
 
         private const int _map_width = 32;
-        private const int _map_height = 32;
+        private const int _map_height = 20;
 
         private const double _fov = Math.PI / 3;
         private const double _depth = 16;
@@ -18,46 +19,15 @@ namespace Adventure
         private static double _playerA = 0;
 
         private static readonly char[] _screen = new char[_screen_width * _screen_height];
-        private static string _map = String.Empty;
+        private static readonly StringBuilder _map = new StringBuilder();
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             Console.SetWindowSize(_screen_width, _screen_height);
             Console.SetBufferSize(_screen_width, _screen_height);
             Console.CursorVisible = false;
 
-            _map += "################################";
-            _map += "#.......................#......#";
-            _map += "#.......................#......#";
-            _map += "#.......................#......#";
-            _map += "#.......................#......#";
-            _map += "#.......................#......#";
-            _map += "#.......................#......#";
-            _map += "#.......................#......#";
-            _map += "#..............................#";
-            _map += "#..######################......#";
-            _map += "#..............................#";
-            _map += "#...............################";
-            _map += "#...............#..............#";
-            _map += "#...............#..............#";
-            _map += "#...............#############..#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "#..............................#";
-            _map += "################################";
+            InitMap();
 
             DateTime date_time_from = DateTime.Now;
             
@@ -107,78 +77,26 @@ namespace Adventure
                         default:
                             break;
                     }
+
+                    InitMap();
                 }
+
+                var ray_casting_task = new List<Task<Dictionary<int, char>>>();
 
                 for (int x = 0; x < _screen_width; x++)
                 {
-                    double ray_angle = _playerA + _fov / 2 - x * _fov / _screen_width;
-                    double rayX = Math.Sin(ray_angle);
-                    double rayY = Math.Cos(ray_angle);
-                    double distance_to_wall = 0;
-                    bool hit_wall = false;
+                    int x1 = x;
 
-                    while(!hit_wall && distance_to_wall < _depth)
+                    ray_casting_task.Add(Task.Run(() => CastRay(x1)));
+                }
+
+                var rays = await Task.WhenAll(ray_casting_task);
+
+                foreach (Dictionary<int, char> dictionary in rays) 
+                {
+                    foreach (int key in dictionary.Keys)
                     {
-                        distance_to_wall += 0.1;
-
-                        int testX = (int)(_playerX + rayX * distance_to_wall);
-                        int testY = (int)(_playerY + rayY * distance_to_wall);
-
-                        if (testX < 0 || testX > _depth + _playerX || testY < 0 || testY > _depth + _playerY)
-                        {
-                            hit_wall = true;
-                            distance_to_wall = _depth;
-                        }
-                        else
-                        {
-                            char test_cell = _map[testY * _map_width + testX];
-
-                            if (test_cell == '#')
-                            {
-                                hit_wall = true;
-                            }
-                        }
-                    }
-
-                    int ceiling = (int)(_screen_height / 2d - _screen_height * _fov / distance_to_wall);
-                    int floor = _screen_height - ceiling;
-                    char wall_shade;
-
-                    if (distance_to_wall <= _depth / 4d)
-                        wall_shade = '\u2588';
-                    else if (distance_to_wall < _depth / 3d)
-                        wall_shade = '\u2593';
-                    else if (distance_to_wall < _depth / 2d)
-                        wall_shade = '\u2592';
-                    else if (distance_to_wall < _depth)
-                        wall_shade = '\u2591';
-                    else
-                        wall_shade = ' ';
-
-                    for (int y = 0; y < _screen_height; y++)
-                    {
-                        if (y <= ceiling)
-                            _screen[y * _screen_width + x] = ' ';
-                        else if (y > ceiling && y <= floor)
-                            _screen[y * _screen_width + x] = wall_shade;
-                        else
-                        {
-                            char floor_shade;
-                            double b = 1 - (y - _screen_height / 2d) / (_screen_height / 2d);
-
-                            if (b < 0.25)
-                                floor_shade = '#';
-                            else if (b < 0.5)
-                                floor_shade = 'x';
-                            else if (b < 0.75)
-                                floor_shade = '-';
-                            else if (b < 0.9)
-                                floor_shade = '.';
-                            else
-                                floor_shade = ' ';
-
-                            _screen[y * _screen_width + x] = floor_shade;
-                        }
+                        _screen[key] = dictionary[key];
                     }
                 }
 
@@ -203,6 +121,132 @@ namespace Adventure
                 Console.SetCursorPosition(0, 0);
                 Console.Write(_screen);
             }
+        }
+
+        public static Dictionary<int, char> CastRay(int x)
+        {
+            var result = new Dictionary<int, char>();
+            double ray_angle = _playerA + _fov / 2 - x * _fov / _screen_width;
+            double rayX = Math.Sin(ray_angle);
+            double rayY = Math.Cos(ray_angle);
+            double distance_to_wall = 0;
+            bool hit_wall = false;
+            bool is_bounds = false;
+
+            while (!hit_wall && distance_to_wall < _depth)
+            {
+                distance_to_wall += 0.1;
+
+                int testX = (int)(_playerX + rayX * distance_to_wall);
+                int testY = (int)(_playerY + rayY * distance_to_wall);
+
+                if (testX < 0 || testX > _depth + _playerX || testY < 0 || testY > _depth + _playerY)
+                {
+                    hit_wall = true;
+                    distance_to_wall = _depth;
+                }
+                else
+                {
+                    char test_cell = _map[testY * _map_width + testX];
+
+                    if (test_cell == '#')
+                    {
+                        hit_wall = true;
+
+                        var bounds_vector_list = new List<(double module, double cos)>();
+
+                        for (int tx = 0; tx < 2; tx++)
+                        {
+                            for (int ty = 0; ty < 2; ty++)
+                            {
+                                double vx = testX + tx - _playerX;
+                                double vy = testY + ty - _playerY;
+                                double vector_module = Math.Sqrt(vx * vx + vy * vy);
+                                double cos_angle = rayX * vx / vector_module + rayY * vy / vector_module;
+
+                                bounds_vector_list.Add((vector_module, cos_angle));
+                            }
+                        }
+                        bounds_vector_list = bounds_vector_list.OrderBy(v => v.module).ToList();
+
+                        double bound_angle = 0.03 / distance_to_wall;
+
+                        if (Math.Acos(bounds_vector_list[0].cos) < bound_angle || Math.Acos(bounds_vector_list[1].cos) < bound_angle)
+                            is_bounds = true;
+                    }
+                    else
+                        _map[testY * _map_width + testX] = '.';
+                }
+            }
+
+            int ceiling = (int)(_screen_height / 2d - _screen_height * _fov / distance_to_wall);
+            int floor = _screen_height - ceiling;
+            char wall_shade;
+
+            if (is_bounds)
+                wall_shade = '|';
+            else if (distance_to_wall <= _depth / 4d)
+                wall_shade = '\u2588';
+            else if (distance_to_wall < _depth / 3d)
+                wall_shade = '\u2593';
+            else if (distance_to_wall < _depth / 2d)
+                wall_shade = '\u2592';
+            else if (distance_to_wall < _depth)
+                wall_shade = '\u2591';
+            else
+                wall_shade = ' ';
+
+            for (int y = 0; y < _screen_height; y++)
+            {
+                if (y <= ceiling)
+                    result[y * _screen_width + x] = ' ';
+                else if (y > ceiling && y <= floor)
+                    result[y * _screen_width + x] = wall_shade;
+                else
+                {
+                    char floor_shade;
+                    double b = 1 - (y - _screen_height / 2d) / (_screen_height / 2d);
+
+                    if (b < 0.25)
+                        floor_shade = '#';
+                    else if (b < 0.5)
+                        floor_shade = 'x';
+                    else if (b < 0.75)
+                        floor_shade = '-';
+                    else if (b < 0.9)
+                        floor_shade = '.';
+                    else
+                        floor_shade = ' ';
+
+                    result[y * _screen_width + x] = floor_shade;
+                }
+            }
+            return result;
+        }
+
+        private static void InitMap()
+        {
+            _map.Clear();
+            _map.Append("################################");
+            _map.Append("#                              #");
+            _map.Append("#                   #          #");
+            _map.Append("#                   #          #");
+            _map.Append("#                   ######     #");
+            _map.Append("#                         #    #");
+            _map.Append("################          #    #");
+            _map.Append("#              #   #      #    #");
+            _map.Append("#              #   #    ########");
+            _map.Append("#              #   #           #");
+            _map.Append("#              #        #      #");
+            _map.Append("#              # ############# #");
+            _map.Append("#                              #");
+            _map.Append("#                              #");
+            _map.Append("#                              #");
+            _map.Append("#                              #");
+            _map.Append("#                              #");
+            _map.Append("#                              #");
+            _map.Append("#                              #");
+            _map.Append("################################");
         }
     }
 }
