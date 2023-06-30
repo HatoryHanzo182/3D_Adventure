@@ -8,14 +8,14 @@ namespace Adventure
         private const int _screen_width = 200;
         private const int _screen_height = 40;
 
-        private const int _map_width = 32;
-        private const int _map_height = 20;
+        private const int _map_width = 66;
+        private const int _map_height = 28;
 
         private const double _fov = Math.PI / 3;
         private const double _depth = 16;
 
-        private static double _playerX = 5;
-        private static double _playerY = 5;
+        private static double _playerX = 2;
+        private static double _playerY = 2;
         private static double _playerA = 0;
 
         private static readonly char[] _screen = new char[_screen_width * _screen_height];
@@ -27,53 +27,54 @@ namespace Adventure
             Console.SetBufferSize(_screen_width, _screen_height);
             Console.CursorVisible = false;
 
+            DateTime date_time_from = DateTime.Now;
+
             InitMap();
 
-            DateTime date_time_from = DateTime.Now;
-            
-            while (true) 
+            while (true)
             {
+
                 DateTime date_time_to = DateTime.Now;
                 double elapsed_time = (date_time_to - date_time_from).TotalSeconds;
-                
+
                 date_time_from = DateTime.Now;
 
                 if (Console.KeyAvailable)
                 {
                     ConsoleKey console_key = Console.ReadKey(true).Key;
 
-                    switch (console_key) 
+                    switch (console_key)
                     {
                         case ConsoleKey.A:
-                            _playerA += 7.0 * elapsed_time * 2;
+                            _playerA += elapsed_time * 2;
                             break;
                         case ConsoleKey.D:
-                            _playerA -= 7.0 * elapsed_time * 2;
+                            _playerA -= elapsed_time * 2;
                             break;
                         case ConsoleKey.W:
-                        {
-                            _playerX += Math.Sin(_playerA) * 20 * elapsed_time;
-                            _playerY += Math.Cos(_playerA) * 20 * elapsed_time;
-                             
-                             if (_map[(int)_playerY * _map_width + (int)_playerX] == '#')
-                             {
-                                 _playerX -= Math.Sin(_playerA) * 20 * elapsed_time;
-                                 _playerY -= Math.Cos(_playerA) * 20 * elapsed_time;
-                             }
-                            break;
-                        }
-                        case ConsoleKey.S:
-                        {
-                            _playerX -= Math.Sin(_playerA) * 20 * elapsed_time;
-                            _playerY -= Math.Cos(_playerA) * 20 * elapsed_time;
-
-                            if (_map[(int)_playerY * _map_width + (int)_playerX] == '#')
                             {
                                 _playerX += Math.Sin(_playerA) * 20 * elapsed_time;
                                 _playerY += Math.Cos(_playerA) * 20 * elapsed_time;
+
+                                if (_map[(int)_playerY * _map_width + (int)_playerX] == '#')
+                                {
+                                    _playerX -= Math.Sin(_playerA) * 20 * elapsed_time;
+                                    _playerY -= Math.Cos(_playerA) * 20 * elapsed_time;
+                                }
+                                break;
                             }
-                            break;
-                        }
+                        case ConsoleKey.S:
+                            {
+                                _playerX -= Math.Sin(_playerA) * 20 * elapsed_time;
+                                _playerY -= Math.Cos(_playerA) * 20 * elapsed_time;
+
+                                if (_map[(int)_playerY * _map_width + (int)_playerX] == '#')
+                                {
+                                    _playerX += Math.Sin(_playerA) * 20 * elapsed_time;
+                                    _playerY += Math.Cos(_playerA) * 20 * elapsed_time;
+                                }
+                                break;
+                            }
                         default:
                             break;
                     }
@@ -92,7 +93,7 @@ namespace Adventure
 
                 var rays = await Task.WhenAll(ray_casting_task);
 
-                foreach (Dictionary<int, char> dictionary in rays) 
+                foreach (Dictionary<int, char> dictionary in rays)
                 {
                     foreach (int key in dictionary.Keys)
                     {
@@ -101,7 +102,7 @@ namespace Adventure
                 }
 
                 // Status.
-                char[] status = $"X: {_playerX}  Y: {_playerY}  A: {_playerA}  FPS: {(int)(1/ elapsed_time)}".ToCharArray();
+                char[] status = $"X: {_playerX}  Y: {_playerY}  A: {_playerA}  FPS: {(int)(1 / elapsed_time)}".ToCharArray();
 
                 status.CopyTo(_screen, 0);
 
@@ -226,27 +227,11 @@ namespace Adventure
 
         private static void InitMap()
         {
+            string[] map = File.ReadAllLines("MAP.txt");
+
             _map.Clear();
-            _map.Append("################################");
-            _map.Append("#                              #");
-            _map.Append("#                   #          #");
-            _map.Append("#                   #          #");
-            _map.Append("#                   ######     #");
-            _map.Append("#                         #    #");
-            _map.Append("################          #    #");
-            _map.Append("#              #   #      #    #");
-            _map.Append("#              #   #    ########");
-            _map.Append("#              #   #           #");
-            _map.Append("#              #        #      #");
-            _map.Append("#              # ############# #");
-            _map.Append("#                              #");
-            _map.Append("#                              #");
-            _map.Append("#                              #");
-            _map.Append("#                              #");
-            _map.Append("#                              #");
-            _map.Append("#                              #");
-            _map.Append("#                              #");
-            _map.Append("################################");
+            foreach (string line in map)
+                _map.Append(line);
         }
     }
 }
