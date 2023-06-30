@@ -116,8 +116,7 @@ namespace Adventure
                     }
                 }
 
-                _screen[(int)(_playerY + 1) * _screen_width + (int)_playerX] = '✯';
-
+                _screen[(int)(_playerY + 1) * _screen_width + (int)_playerX] = (char)15;
 
                 Console.SetCursorPosition(0, 0);
                 Console.Write(_screen);
@@ -209,11 +208,11 @@ namespace Adventure
                     double b = 1 - (y - _screen_height / 2d) / (_screen_height / 2d);
 
                     if (b < 0.25)
-                        floor_shade = '#';
+                        floor_shade = (char)157;
                     else if (b < 0.5)
-                        floor_shade = 'x';
+                        floor_shade = (char)156;
                     else if (b < 0.75)
-                        floor_shade = '-';
+                        floor_shade = (char)155;
                     else if (b < 0.9)
                         floor_shade = '.';
                     else
