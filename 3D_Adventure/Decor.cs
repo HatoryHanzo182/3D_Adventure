@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace Adventure
 {
+     // Decor enumeration type, contains all
+    // char elements drawn in the console.
     public enum Decor
     {
         wall = '#',
