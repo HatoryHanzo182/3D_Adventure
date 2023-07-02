@@ -3,11 +3,8 @@ using System.Text;
 
 namespace Adventure
 {
-    class Program
+    class Adventure
     {
-        private const int _screen_width = 200;
-        private const int _screen_height = 40;
-
         private const int _map_width = 66;
         private const int _map_height = 28;
 
@@ -18,14 +15,12 @@ namespace Adventure
         private static double _playerY = 2;
         private static double _playerA = 0;
 
-        private static readonly char[] _screen = new char[_screen_width * _screen_height];
+        private static char[] _screen = new char[ScreenOptions.Width * ScreenOptions.Height];
         private static readonly StringBuilder _map = new StringBuilder();
 
         static async Task Main(string[] args)
         {
-            Console.SetWindowSize(_screen_width, _screen_height);
-            Console.SetBufferSize(_screen_width, _screen_height);
-            Console.CursorVisible = false;
+            ScreenOptions.ConfigureConsole();
 
             DateTime date_time_from = DateTime.Now;
 
@@ -49,7 +44,7 @@ namespace Adventure
                             _playerA += elapsed_time * 2;
                             break;
                         case ConsoleKey.D:
-                            _playerA -= elapsed_time * 2;
+                            _playerA -= elapsed_time * 2; 
                             break;
                         case ConsoleKey.W:
                             {
@@ -84,7 +79,7 @@ namespace Adventure
 
                 var ray_casting_task = new List<Task<Dictionary<int, char>>>();
 
-                for (int x = 0; x < _screen_width; x++)
+                for (int x = 0; x < ScreenOptions.Width; x++)
                 {
                     int x1 = x;
 
@@ -96,9 +91,7 @@ namespace Adventure
                 foreach (Dictionary<int, char> dictionary in rays)
                 {
                     foreach (int key in dictionary.Keys)
-                    {
                         _screen[key] = dictionary[key];
-                    }
                 }
 
                 // Status.
@@ -111,12 +104,10 @@ namespace Adventure
                 for (int x = 0; x < _map_width; x++)
                 {
                     for (int y = 0; y < _map_height; y++)
-                    {
-                        _screen[(y + 1) * _screen_width + x] = _map[y * _map_width + x];
-                    }
+                        _screen[(y + 1) * ScreenOptions.Width + x] = _map[y * _map_width + x];
                 }
 
-                _screen[(int)(_playerY + 1) * _screen_width + (int)_playerX] = (char)15;
+                _screen[(int)(_playerY + 1) * ScreenOptions.Width + (int)_playerX] = (char)15;
 
                 Console.SetCursorPosition(0, 0);
                 Console.Write(_screen);
@@ -126,7 +117,7 @@ namespace Adventure
         public static Dictionary<int, char> CastRay(int x)
         {
             var result = new Dictionary<int, char>();
-            double ray_angle = _playerA + _fov / 2 - x * _fov / _screen_width;
+            double ray_angle = _playerA + _fov / 2 - x * _fov / ScreenOptions.Width;
             double rayX = Math.Sin(ray_angle);
             double rayY = Math.Cos(ray_angle);
             double distance_to_wall = 0;
@@ -179,8 +170,8 @@ namespace Adventure
                 }
             }
 
-            int ceiling = (int)(_screen_height / 2d - _screen_height * _fov / distance_to_wall);
-            int floor = _screen_height - ceiling;
+            int ceiling = (int)(ScreenOptions.Height / 2d - ScreenOptions.Height * _fov / distance_to_wall);
+            int floor = ScreenOptions.Height - ceiling;
             char wall_shade;
 
             if (is_bounds)
@@ -196,29 +187,23 @@ namespace Adventure
             else
                 wall_shade = ' ';
 
-            for (int y = 0; y < _screen_height; y++)
+            for (int y = 0; y < ScreenOptions.Height; y++)
             {
                 if (y <= ceiling)
-                    result[y * _screen_width + x] = ' ';
+                    result[y * ScreenOptions.Width + x] = ' ';
                 else if (y > ceiling && y <= floor)
-                    result[y * _screen_width + x] = wall_shade;
+                    result[y * ScreenOptions.Width + x] = wall_shade;
                 else
                 {
                     char floor_shade;
-                    double b = 1 - (y - _screen_height / 2d) / (_screen_height / 2d);
+                    double b = 1 - (y - ScreenOptions.Height / 2d) / (ScreenOptions.Height / 2d);
 
-                    if (b < 0.25)
-                        floor_shade = (char)157;
-                    else if (b < 0.5)
-                        floor_shade = (char)156;
-                    else if (b < 0.75)
-                        floor_shade = (char)155;
-                    else if (b < 0.9)
-                        floor_shade = '.';
+                    if (b < 0.5)
+                        floor_shade = '\u2592';
                     else
-                        floor_shade = ' ';
+                        floor_shade = '.';
 
-                    result[y * _screen_width + x] = floor_shade;
+                    result[y * ScreenOptions.Width + x] = floor_shade;
                 }
             }
             return result;
