@@ -5,13 +5,13 @@ namespace Adventure
 {
     class Adventure
     {
-        private static MapDrawer map = new MapDrawer();
+        private static MapDrawer game = new MapDrawer();
 
         static void Main(string[] args)
         {
             ScreenOptions.ConfigureConsole();
 
-            map.VOV().Wait();
+            game.Run().Wait();
         }
     }
 }

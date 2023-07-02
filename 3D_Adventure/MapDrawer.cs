@@ -10,18 +10,16 @@ namespace Adventure
     {
         private const int _map_width = 66;
         private const int _map_height = 28;
-
         private const double _fov = Math.PI / 3;
         private const double _depth = 16;
-
         private static double _playerX = 2;
         private static double _playerY = 2;
         private static double _playerA = 0;
-
         private static char[] _screen = new char[ScreenOptions.Width * ScreenOptions.Height];
         private static readonly StringBuilder _map = new StringBuilder();
+        private double elapsed_time;
 
-        public async Task VOV()
+        public async Task Run()
         {
             DateTime date_time_from = DateTime.Now;
 
@@ -29,56 +27,14 @@ namespace Adventure
 
             while (true)
             {
-
                 DateTime date_time_to = DateTime.Now;
-                double elapsed_time = (date_time_to - date_time_from).TotalSeconds;
 
+                elapsed_time = (date_time_to - date_time_from).TotalSeconds;
                 date_time_from = DateTime.Now;
 
-                if (Console.KeyAvailable)
-                {
-                    ConsoleKey console_key = Console.ReadKey(true).Key;
+                Controller();
 
-                    switch (console_key)
-                    {
-                        case ConsoleKey.A:
-                            _playerA += elapsed_time * 2;
-                            break;
-                        case ConsoleKey.D:
-                            _playerA -= elapsed_time * 2;
-                            break;
-                        case ConsoleKey.W:
-                            {
-                                _playerX += Math.Sin(_playerA) * 20 * elapsed_time;
-                                _playerY += Math.Cos(_playerA) * 20 * elapsed_time;
-
-                                if (_map[(int)_playerY * _map_width + (int)_playerX] == '#')
-                                {
-                                    _playerX -= Math.Sin(_playerA) * 20 * elapsed_time;
-                                    _playerY -= Math.Cos(_playerA) * 20 * elapsed_time;
-                                }
-                                break;
-                            }
-                        case ConsoleKey.S:
-                            {
-                                _playerX -= Math.Sin(_playerA) * 20 * elapsed_time;
-                                _playerY -= Math.Cos(_playerA) * 20 * elapsed_time;
-
-                                if (_map[(int)_playerY * _map_width + (int)_playerX] == '#')
-                                {
-                                    _playerX += Math.Sin(_playerA) * 20 * elapsed_time;
-                                    _playerY += Math.Cos(_playerA) * 20 * elapsed_time;
-                                }
-                                break;
-                            }
-                        default:
-                            break;
-                    }
-
-                    InitMap();
-                }
-
-                var ray_casting_task = new List<Task<Dictionary<int, char>>>();
+                List<Task<Dictionary<int, char>>> ray_casting_task = new List<Task<Dictionary<int, char>>>();
 
                 for (int x = 0; x < ScreenOptions.Width; x++)
                 {
@@ -87,9 +43,7 @@ namespace Adventure
                     ray_casting_task.Add(Task.Run(() => CastRay(x1)));
                 }
 
-                var rays = await Task.WhenAll(ray_casting_task);
-
-                foreach (Dictionary<int, char> dictionary in rays)
+                foreach (Dictionary<int, char> dictionary in await Task.WhenAll(ray_casting_task))
                 {
                     foreach (int key in dictionary.Keys)
                         _screen[key] = dictionary[key];
@@ -115,7 +69,7 @@ namespace Adventure
             }
         }
 
-        public static Dictionary<int, char> CastRay(int x)
+        private static Dictionary<int, char> CastRay(int x)
         {
             var result = new Dictionary<int, char>();
             double ray_angle = _playerA + _fov / 2 - x * _fov / ScreenOptions.Width;
@@ -208,6 +162,50 @@ namespace Adventure
                 }
             }
             return result;
+        }
+
+        private void Controller()
+        {
+            if (Console.KeyAvailable)
+            {
+                switch (Console.ReadKey(true).Key)
+                {
+                    case (ConsoleKey)Control.left:
+                        _playerA += elapsed_time * 2;
+                        break;
+                    case (ConsoleKey)Control.right:
+                        _playerA -= elapsed_time * 2;
+                        break;
+                    case (ConsoleKey)Control.forward:
+                        {
+                            _playerX += Math.Sin(_playerA) * 20 * elapsed_time;
+                            _playerY += Math.Cos(_playerA) * 20 * elapsed_time;
+
+                            if (_map[(int)_playerY * _map_width + (int)_playerX] == '#')
+                            {
+                                _playerX -= Math.Sin(_playerA) * 20 * elapsed_time;
+                                _playerY -= Math.Cos(_playerA) * 20 * elapsed_time;
+                            }
+                            break;
+                        }
+                    case (ConsoleKey)Control.back:
+                        {
+                            _playerX -= Math.Sin(_playerA) * 20 * elapsed_time;
+                            _playerY -= Math.Cos(_playerA) * 20 * elapsed_time;
+
+                            if (_map[(int)_playerY * _map_width + (int)_playerX] == '#')
+                            {
+                                _playerX += Math.Sin(_playerA) * 20 * elapsed_time;
+                                _playerY += Math.Cos(_playerA) * 20 * elapsed_time;
+                            }
+                            break;
+                        }
+                    default:
+                        break;
+                }
+
+                InitMap();
+            }
         }
 
         private static void InitMap()
