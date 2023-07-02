@@ -1,6 +1,6 @@
 ## 3D ADVENTURE
 
-https://github.com/HatoryHanzo182/3D_Adventure/assets/55142468/0ad1626d-5474-46e4-b036-ab14997931dd
+https://github.com/HatoryHanzo182/3D_Adventure/assets/55142468/4dfe45b6-9cd9-4d13-91a2-37144d269b32
 
 The project is a simple 3D game that uses ray tracing to display a 3D scene on the screen. The game allows the player to move around the map, turn around and explore the environment.
 
