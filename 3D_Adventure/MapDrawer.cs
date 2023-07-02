@@ -8,8 +8,8 @@ namespace Adventure
 {
     public class MapDrawer
     {
-        private const int _map_width = 66;
-        private const int _map_height = 28;
+        private const int _map_width = 30;
+        private const int _map_height = 11;
         private const double _fov = Math.PI / 3;
         private const double _depth = 16;
         private static double _playerX = 2;
@@ -49,20 +49,8 @@ namespace Adventure
                         _screen[key] = dictionary[key];
                 }
 
-                // Status.
-                char[] status = $"X: {_playerX}  Y: {_playerY}  A: {_playerA}  FPS: {(int)(1 / elapsed_time)}".ToCharArray();
-
-                status.CopyTo(_screen, 0);
-
-
-                // Mini map.
-                for (int x = 0; x < _map_width; x++)
-                {
-                    for (int y = 0; y < _map_height; y++)
-                        _screen[(y + 1) * ScreenOptions.Width + x] = _map[y * _map_width + x];
-                }
-
-                _screen[(int)(_playerY + 1) * ScreenOptions.Width + (int)_playerX] = (char)15;
+                OutStatus();
+                OutMiniMap();
 
                 Console.SetCursorPosition(0, 0);
                 Console.Write(_screen);
@@ -95,7 +83,7 @@ namespace Adventure
                 {
                     char test_cell = _map[testY * _map_width + testX];
 
-                    if (test_cell == '#')
+                    if (test_cell == (char)Decor.wall)
                     {
                         hit_wall = true;
 
@@ -121,7 +109,7 @@ namespace Adventure
                             is_bounds = true;
                     }
                     else
-                        _map[testY * _map_width + testX] = '.';
+                        _map[testY * _map_width + testX] = (char)Decor.floor;
                 }
             }
 
@@ -130,22 +118,22 @@ namespace Adventure
             char wall_shade;
 
             if (is_bounds)
-                wall_shade = '|';
+                wall_shade = (char)Decor.bound;
             else if (distance_to_wall <= _depth / 4d)
-                wall_shade = '\u2588';
+                wall_shade = (char)Decor.wall_4d;
             else if (distance_to_wall < _depth / 3d)
-                wall_shade = '\u2593';
+                wall_shade = (char)Decor.wall_3d;
             else if (distance_to_wall < _depth / 2d)
-                wall_shade = '\u2592';
+                wall_shade = (char)Decor.wall_2d;
             else if (distance_to_wall < _depth)
-                wall_shade = '\u2591';
+                wall_shade = (char)Decor.wall_d;
             else
-                wall_shade = ' ';
+                wall_shade = (char)Decor.space;
 
             for (int y = 0; y < ScreenOptions.Height; y++)
             {
                 if (y <= ceiling)
-                    result[y * ScreenOptions.Width + x] = ' ';
+                    result[y * ScreenOptions.Width + x] = (char)Decor.space;
                 else if (y > ceiling && y <= floor)
                     result[y * ScreenOptions.Width + x] = wall_shade;
                 else
@@ -154,9 +142,9 @@ namespace Adventure
                     double b = 1 - (y - ScreenOptions.Height / 2d) / (ScreenOptions.Height / 2d);
 
                     if (b < 0.5)
-                        floor_shade = '\u2592';
+                        floor_shade = (char)Decor.wall_2d;
                     else
-                        floor_shade = '.';
+                        floor_shade = (char)Decor.floor;
 
                     result[y * ScreenOptions.Width + x] = floor_shade;
                 }
@@ -181,7 +169,7 @@ namespace Adventure
                             _playerX += Math.Sin(_playerA) * 20 * elapsed_time;
                             _playerY += Math.Cos(_playerA) * 20 * elapsed_time;
 
-                            if (_map[(int)_playerY * _map_width + (int)_playerX] == '#')
+                            if (_map[(int)_playerY * _map_width + (int)_playerX] == (char)Decor.wall)
                             {
                                 _playerX -= Math.Sin(_playerA) * 20 * elapsed_time;
                                 _playerY -= Math.Cos(_playerA) * 20 * elapsed_time;
@@ -193,7 +181,7 @@ namespace Adventure
                             _playerX -= Math.Sin(_playerA) * 20 * elapsed_time;
                             _playerY -= Math.Cos(_playerA) * 20 * elapsed_time;
 
-                            if (_map[(int)_playerY * _map_width + (int)_playerX] == '#')
+                            if (_map[(int)_playerY * _map_width + (int)_playerX] == (char)Decor.wall)
                             {
                                 _playerX += Math.Sin(_playerA) * 20 * elapsed_time;
                                 _playerY += Math.Cos(_playerA) * 20 * elapsed_time;
@@ -215,6 +203,24 @@ namespace Adventure
             _map.Clear();
             foreach (string line in map)
                 _map.Append(line);
+        }
+
+        private void OutStatus()
+        {
+            char[] status = $"X: {_playerX}  Y: {_playerY}  A: {_playerA}  FPS: {(int)(1 / elapsed_time)}".ToCharArray();
+
+            status.CopyTo(_screen, 0);
+        }
+
+        private void OutMiniMap()
+        {
+            for (int x = 0; x < _map_width; x++)
+            {
+                for (int y = 0; y < _map_height; y++)
+                    _screen[(y + 1) * ScreenOptions.Width + x] = _map[y * _map_width + x];
+            }
+
+            _screen[(int)(_playerY + 1) * ScreenOptions.Width + (int)_playerX] = (char)15;
         }
     }
 }
